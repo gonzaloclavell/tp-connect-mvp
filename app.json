@@ -1,4 +1,6 @@
 {
+  "name": "PeopleApp",
+  "displayName": "PeopleApp",
   "expo": {
     "name": "tp-connect-mvp",
     "description": "This project is really great.",
