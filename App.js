@@ -29,7 +29,7 @@ import { Constants } from 'expo';
 //http://oauth2.marathon.l4lb.thisdcos.directory:9999/oauth/private/v1/authorize?response_type=code&client_id=form&scope=read&redirect_uri={{urlOAuth}}
 
   const env = {
-    urlBase: 'http://198.18.128.169:39009/oauth/private/v1',
+    urlBase: 'http://198.18.128.169:39136/oauth/private/v1',
     redirectUri: 'exp://198.18.128.169:19000'
     
   };
@@ -41,7 +41,8 @@ export default class App extends Component {
     this.state = {
       code: "",
       getTokenUrl: env.urlBase+'/token?grant_type=authorization_code&client_id=form&client_secret=formsecret&retredirect_uri='+env.redirectUri,
-      authorizeUrl: env.urlBase+'/authorize?response_type=code&client_id=form&scope=read&redirect_uri='+env.redirectUri
+      authorizeUrl: env.urlBase+'/authorize?response_type=code&client_id=form&scope=read&redirect_uri='+env.redirectUri,
+      authorizationToken: ""
     };
   }
 
@@ -49,14 +50,43 @@ export default class App extends Component {
     console.log("agrego listener");
     Linking.addEventListener('url', this.handleOpenURL);
   }
+  
   componentWillUnmount() {
     Linking.removeEventListener('url', this.handleOpenURL);
   }
+  
   handleOpenURL(event) {
-    console.log(event.url);
-    const route = e.url.replace(/.*?:\/\//g, '');
-    console.log("ROUTE "+route);
-    // do something with the url, in our case navigate(route)
+    let url = event.url;
+    let codeString = url.split("?")[1];
+    let authorizationCode = codeString.split("=")[1];
+    this.setState( previousState => {
+      return {
+        code: authorizationCode,
+        getTokenUrl: previousState.getTokenUrl,
+        authorizeUrl: previousState.authorizeUrl,
+      };
+    });
+    console.log("code = "+ this.state.code);
+  }
+
+  _fetchAuthorizationToken() {
+    fetch(this.state.getTokenUrl, {
+      method: 'GET'
+    })
+    .then(response => response.json())
+    .then((responseJson) => {
+      this.setState(previousState => {
+        return {
+          code: previousState.code,
+          getTokenUrl: previousState.getTokenUrl,
+          authorizeUrl: previousState.authorizeUrl,
+          authorizationToken: responseJson
+        };
+      });
+    })
+    .catch((error) => {
+      console.error(error);
+    });
   }
 
   render() {
@@ -78,19 +108,13 @@ export default class App extends Component {
           }
           title="TP CONNECT"
         />
-  
-
         <Text>
           getTokenUrl :{this.state.getTokenUrl}
         </Text>
         <Button
-          onPress={ () => { 
-              Linking.openURL(this.state.getTokenUrl+this.state.code) 
-            }
-          }
+          onPress={ this._fetchAuthorizationToken }
           title="GET TOKEN"
         />
-        <Text></Text>
       </View>
 
       </View> 
