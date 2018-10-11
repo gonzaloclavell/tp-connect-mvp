@@ -1,35 +1,8 @@
-//import React from 'react';
-//import { StyleSheet, Text, View } from 'react-native';
-
-//export default class App extends React.Component {
-//  render() {
-//    return (
-//      <View style={styles.container}>
-//        <Text>Open up App.js to start working on your app!</Text>
-//      </View>
-//    );
-//  }
-//}
-
-//const styles = StyleSheet.create({
-//  container: {
-//    flex: 1,
-//    backgroundColor: '#fff',
-//    alignItems: 'center',
-//    justifyContent: 'center',
-//  },
-//});
-
-
-
 import React, { Component} from 'react';
 import { View, Text, Button, Linking } from 'react-native';
 import { Constants } from 'expo';
-//oauth2.marathon.l4lb.thisdcos.directory:9999
-//http://oauth2.marathon.l4lb.thisdcos.directory:9999/oauth/private/v1/authorize?response_type=code&client_id=form&scope=read&redirect_uri={{urlOAuth}}
-
   const env = {
-    urlBase: 'http://198.18.128.169:39136/oauth/private/v1',
+    urlBase: 'http://198.18.128.169:39104/oauth/private/v1',
     redirectUri: 'exp://198.18.128.169:19000'
     
   };
@@ -38,12 +11,15 @@ export default class App extends Component {
 
   constructor (props, context) {
     super(props);
+    //http://198.18.128.195:9999/oauth/private/v1/token?grant_type=authorization_code&client_id=form&client_secret=formsecret&retredirect_uri=exp://198.18.128.195:19000&code=
     this.state = {
       code: "",
-      getTokenUrl: env.urlBase+'/token?grant_type=authorization_code&client_id=form&client_secret=formsecret&retredirect_uri='+env.redirectUri,
       authorizeUrl: env.urlBase+'/authorize?response_type=code&client_id=form&scope=read&redirect_uri='+env.redirectUri,
+      getTokenUrl: env.urlBase+'/token?grant_type=authorization_code&client_id=form&client_secret=formsecret&redirect_uri='+env.redirectUri+"&code=",
       authorizationToken: ""
     };
+    this.handleOpenURL = this.handleOpenURL.bind(this);
+    this._fetchAuthorizationToken = this._fetchAuthorizationToken.bind(this);
   }
 
   componentDidMount() {
@@ -56,35 +32,45 @@ export default class App extends Component {
   }
   
   handleOpenURL(event) {
-    let url = event.url;
-    let codeString = url.split("?")[1];
-    let authorizationCode = codeString.split("=")[1];
-    this.setState( previousState => {
+    let url,codeString,authorizationCode;
+    console.log("code = "+ event.url);    
+    url = event.url;
+    codeString = url.split("?")[1];
+    console.log(codeString);
+    authorizationCode = codeString.split("=")[1];
+    console.log(authorizationCode);
+    this.setState( (previousState) => {
+      console.log("entre a setear estado");
+      console.log(previousState);
+      console.log(previousState.getTokenUrl+authorizationCode);
       return {
         code: authorizationCode,
-        getTokenUrl: previousState.getTokenUrl,
-        authorizeUrl: previousState.authorizeUrl,
+        getTokenUrl: previousState.getTokenUrl+authorizationCode,
+        authorizeUrl: previousState.authorizeUrl
       };
     });
-    console.log("code = "+ this.state.code);
+    console.log("code = "+ this.state.code);    
+    
   }
 
   _fetchAuthorizationToken() {
+    console.log("entre a fetch");
     fetch(this.state.getTokenUrl, {
       method: 'GET'
     })
     .then(response => response.json())
     .then((responseJson) => {
-      this.setState(previousState => {
+      console.log(responseJson);  
+      this.setState( (previousState) => {
         return {
           code: previousState.code,
           getTokenUrl: previousState.getTokenUrl,
           authorizeUrl: previousState.authorizeUrl,
-          authorizationToken: responseJson
+          authorizationToken: JSON.stringify(responseJson)
         };
       });
     })
-    .catch((error) => {
+    .catch((error, errorDescription) => {
       console.error(error);
     });
   }
@@ -115,6 +101,9 @@ export default class App extends Component {
           onPress={ this._fetchAuthorizationToken }
           title="GET TOKEN"
         />
+        <Text>
+          authorizationToken :{this.state.authorizationToken}
+        </Text>
       </View>
 
       </View> 
